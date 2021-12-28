@@ -33,13 +33,23 @@
 </html>
 
 <script>
+  const frame = document.createElement('iframe')
+  frame.name = 'UUID-4224f8ffc8c4e69d48c735b6a461664bc436215c'
+  frame.className = 'container'
+  document.querySelector('.box').appendChild(frame)
+
   const webPostmsg = new window.WebPostmsg.Parent({
-    container: document.querySelector('.box'),
-    className: 'container',
-    url: './children.html',
+    frame,
+    events: [
+      [
+        'example',
+        (data) => {
+          console.log(data)
+          return 'OK'
+        },
+      ],
+    ],
   })
-  webPostmsg.on('example', (data) => {
-    console.log(data)
-    return 'OK'
-  })
+
+  webPostmsg.loadURL('./children.html')
 </script>

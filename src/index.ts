@@ -26,7 +26,7 @@ abstract class BaseAPI {
   /**
    * 当前窗口的句柄
    */
-  protected readonly self: Window = window
+  public readonly self: Window = window
 
   /**
    * 事件列表
@@ -186,21 +186,22 @@ abstract class BaseAPI {
 }
 
 export interface ParentAPIOptions extends BaseAPIOptions {
-  container: HTMLElement
+  container?: HTMLElement
   className?: string
   url?: string
+  frame?: HTMLIFrameElement
 }
 
 class ParentAPI extends BaseAPI {
   /**
    * 子窗口的句柄
    */
-  private readonly child: Window
+  public readonly child: Window
 
   /**
    * 子窗口ui句柄
    */
-  private readonly frame: HTMLIFrameElement
+  public readonly frame: HTMLIFrameElement
 
   /**
    * 父窗口指定给子窗口的唯一键值
@@ -210,11 +211,23 @@ class ParentAPI extends BaseAPI {
   public constructor(options: ParentAPIOptions) {
     super(options)
 
-    // 创建frame元素
-    this.frame = document.createElement('iframe')
-    this.frame.name = this.wid
-    if (options.className) this.frame.className = options.className
-    options.container.appendChild(this.frame)
+    // 如果传递了frame
+    if (options.frame) {
+      this.frame = options.frame
+      if (this.frame.name) {
+        this.wid = this.frame.name
+      } else {
+        this.frame.name = this.wid
+      }
+    } else {
+      // 创建frame元素
+      this.frame = document.createElement('iframe')
+      this.frame.name = this.wid
+      if (options.className) this.frame.className = options.className
+      if (!options.container) throw new Error('container is null')
+      options.container.appendChild(this.frame)
+    }
+
     this.child = this.frame.contentWindow!
 
     if (options.url) this.loadURL(options.url)
@@ -247,7 +260,7 @@ class ChildAPI extends BaseAPI {
   /**
    * 父窗口的句柄
    */
-  private readonly parent: Window = window.parent
+  public readonly parent: Window = window.parent
 
   /**
    * 父窗口指定给子窗口的唯一键值
