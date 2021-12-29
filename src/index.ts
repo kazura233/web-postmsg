@@ -143,7 +143,7 @@ abstract class BaseAPI {
     this.self.setTimeout(() => {
       if (this.waitQueue.has(msg.mid)) {
         this.waitQueue.delete(msg.mid)
-        reject(new Error('timeout'))
+        reject(new Error(`event ${msg.type} timeout`))
       }
     }, 5000)
   }
