@@ -15,7 +15,18 @@ interface BaseAPIOptions {
   events?: Array<[string, Callback]>
 }
 
-abstract class BaseAPI {
+interface IBaseAPI {
+  wid: string
+  self: Window
+  postMessage(message: MessageData, targetOrigin?: string): void
+  generateMsg(type: string, resources: any, rid?: string): MessageData
+  on(event: string, callback: Callback): void
+  off(event: string): void
+  emit(event: string, resources: any): Promise<any>
+  destroy(): void
+}
+
+abstract class BaseAPI implements IBaseAPI {
   /**
    * 消息标签 用于分辨其他msg和webpostmsg事件
    */
@@ -171,7 +182,7 @@ abstract class BaseAPI {
    * @param resources
    * @returns
    */
-  public emit(event: string, resources: any) {
+  public emit(event: string, resources: any): Promise<any> {
     return new Promise<any>((resolve, reject) => {
       this.eventDispatcher(resolve, reject, event, resources)
     })
@@ -185,6 +196,12 @@ abstract class BaseAPI {
   }
 }
 
+export interface IParentAPI extends IBaseAPI {
+  child: Window
+  frame: HTMLIFrameElement
+  loadURL(url: string): void
+}
+
 export interface ParentAPIOptions extends BaseAPIOptions {
   container?: HTMLElement
   className?: string
@@ -192,7 +209,7 @@ export interface ParentAPIOptions extends BaseAPIOptions {
   frame?: HTMLIFrameElement
 }
 
-class ParentAPI extends BaseAPI {
+class ParentAPI extends BaseAPI implements IParentAPI {
   /**
    * 子窗口的句柄
    */
@@ -254,9 +271,14 @@ class ParentAPI extends BaseAPI {
   }
 }
 
-interface ChildAPIOptions extends BaseAPIOptions {}
+export interface IChildAPI extends IBaseAPI {
+  parent: Window
+  ready(): void
+}
 
-class ChildAPI extends BaseAPI {
+export interface ChildAPIOptions extends BaseAPIOptions {}
+
+class ChildAPI extends BaseAPI implements IChildAPI {
   /**
    * 父窗口的句柄
    */
@@ -269,7 +291,7 @@ class ChildAPI extends BaseAPI {
 
   public constructor(options: ChildAPIOptions) {
     super(options)
-    this.reply()
+    this.ready()
   }
 
   public postMessage(message: MessageData, targetOrigin: string = '*'): void {
@@ -279,12 +301,14 @@ class ChildAPI extends BaseAPI {
   /**
    * 当子窗口初始化完毕，通知父页面。
    */
-  public reply() {
-    this.postMessage(this.generateMsg('REPLY__MSG', null))
+  public ready() {
+    this.postMessage(this.generateMsg('CALL__ready', null))
   }
 }
 
-export default class WebPostmsg {
-  public static readonly Parent = ParentAPI
-  public static readonly Child = ChildAPI
+export { ParentAPI as Parent, ChildAPI as Child }
+
+export default {
+  Parent: ParentAPI,
+  Child: ChildAPI,
 }
