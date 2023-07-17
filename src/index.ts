@@ -1,71 +1,69 @@
 import { random } from '@kazura/web-util'
 
 export interface MessageData<T = any> {
-  tag: typeof BaseAPI.MESSAGE_TAG
+  tag: typeof WebPostMsg.MESSAGE_TAG
   type: string
   resources: T
-  mid: string
-  rid: string
-  wid: string
+  channel: string
+  uuid: string
 }
 
-export type Callback = (resources: any, event: MessageEvent<MessageData>) => any
+export interface IPostMsgAPI {}
 
-interface BaseAPIOptions {
-  events?: Array<[string, Callback]>
+export type Listener = (resources: any, event: MessageEvent<MessageData>) => any
+
+export type executor = { resolve: (value: any) => void; reject: (reason?: any) => void }
+
+export interface PostMsgAPIOptions {
+  listeners?: Map<string, Listener>
+  receiver: Window
+  channel: string
 }
 
-interface IBaseAPI {
-  wid: string
-  self: Window
-  postMessage(message: MessageData, targetOrigin?: string): void
-  generateMsg(type: string, resources: any, rid?: string): MessageData
-  on(event: string, callback: Callback): void
-  off(event: string): void
-  emit(event: string, resources: any): Promise<any>
-  destroy(): void
-}
-
-abstract class BaseAPI implements IBaseAPI {
+export class WebPostMsg implements IPostMsgAPI {
   /**
-   * 消息标签 用于分辨其他msg和webpostmsg事件
+   * 消息标签
    */
-  public static readonly MESSAGE_TAG = 'application/x-web-postmsg-v1'
-
-  public abstract readonly wid: string
+  public static readonly MESSAGE_TAG = 'application/x-web-postmsg-v2'
 
   /**
-   * 当前窗口的句柄
+   * 频道
+   */
+  public readonly channel: string
+
+  /**
+   * 发送者(自身)
    */
   public readonly self: Window = window
 
   /**
-   * 事件列表
+   * 接收者
    */
-  protected events: Map<string, Callback> = new Map()
+  public readonly receiver: Window
 
   /**
-   * 等待响应的事件队列
+   * 监听函数集合
    */
-  protected waitQueue: Map<
-    string,
-    { resolve: (value: any) => void; reject: (reason?: any) => void }
-  > = new Map()
+  private listeners: Map<string, Listener> = new Map()
 
-  public constructor(options?: BaseAPIOptions) {
-    if (options && options.events) {
-      options.events.forEach(([event, callback]) => this.on(event, callback))
-    }
+  /**
+   * 执行者事件池
+   */
+  private executorPool: Map<string, executor> = new Map()
+
+  public constructor(options: PostMsgAPIOptions) {
+    this.receiver = options.receiver
+    this.channel = options.channel
+
+    if (options.listeners) this.listeners = options.listeners
     this.self.addEventListener('message', this.eventHandler)
   }
-
-  public abstract postMessage(message: MessageData, targetOrigin?: string): void
 
   /**
    * 生成一个随机的id
    * @returns
    */
-  public generateID() {
+  public static generateUUID() {
     return '' + random(10000, 99999) + new Date().getTime()
   }
 
@@ -73,17 +71,16 @@ abstract class BaseAPI implements IBaseAPI {
    * 生成一条消息
    * @param type
    * @param resources
-   * @param rid
+   * @param replyMessageId
    * @returns
    */
-  public generateMsg(type: string, resources: any, rid: string = ''): MessageData {
+  public generateMessage(type: string, resources: any, replyMessageId?: string): MessageData {
     return {
-      tag: BaseAPI.MESSAGE_TAG,
+      tag: WebPostMsg.MESSAGE_TAG,
       type,
       resources,
-      mid: this.generateID(),
-      rid,
-      wid: this.wid,
+      channel: this.channel,
+      uuid: replyMessageId ?? WebPostMsg.generateUUID(),
     }
   }
 
@@ -92,44 +89,51 @@ abstract class BaseAPI implements IBaseAPI {
    * @param event
    * @returns
    */
-  protected eventHandler = (event: MessageEvent<MessageData>) => {
+  private eventHandler = (event: MessageEvent<MessageData>) => {
     const { data } = event
-    if (
-      typeof data === 'object' &&
-      'tag' in data &&
-      data.tag === BaseAPI.MESSAGE_TAG &&
-      data.wid === this.wid
-    ) {
-      /**
-       * 收到一条事件回应，根据rid将回应数据交给对应的事件发起者。
-       */
-      if (data.type === 'REPLY__MSG') {
-        const p = this.waitQueue.get(data.rid)
-        this.waitQueue.delete(data.rid)
-        if (p) p.resolve(data.resources)
-        return
-      }
+    if (typeof data === 'object' && 'tag' in data && data.tag === WebPostMsg.MESSAGE_TAG) {
+      if (this.channel === data.channel) {
+        /**
+         * 收到一条事件回应，根据uuid将回应数据交给对应的事件发起者。
+         */
+        if (data.type === 'SYS__REPLY__MSG') {
+          const p = this.executorPool.get(data.uuid)
+          this.executorPool.delete(data.uuid)
+          if (p) p.resolve(data.resources)
+          return
+        }
 
-      const callback = this.events.get(data.type)
-      if (callback) {
-        const reply = (resources: any) => this.replyMessage(resources, data.mid)
-        const res = callback(data.resources, event)
-        if (typeof res === 'object' && 'then' in res && typeof res.then === 'function') {
-          res.then((resources: any) => reply(resources))
-        } else {
-          reply(res)
+        const listener = this.listeners.get(data.type)
+        if (listener) {
+          const reply = (resources: any) => this.replyMessage(resources, data.uuid)
+          const result = listener(data.resources, event)
+          if (typeof result === 'object' && 'then' in result && typeof result.then === 'function') {
+            result.then((resources: any) => reply(resources))
+          } else {
+            reply(result)
+          }
         }
       }
     }
   }
 
   /**
-   * 发送一条回应
+   * 回复一条消息
    * @param resources
-   * @param mid
+   * @param replyMessageId
    */
-  protected replyMessage(resources: any, mid: string) {
-    this.postMessage(this.generateMsg('REPLY__MSG', resources, mid))
+  public replyMessage(resources: any, replyMessageId: string) {
+    const message = this.generateMessage('REPLY__MSG', resources, replyMessageId)
+    this.postMessage(message)
+  }
+
+  /**
+   * 发送一条消息
+   * @param message
+   * @param targetOrigin
+   */
+  public postMessage(message: MessageData, targetOrigin: string = '*') {
+    this.receiver.postMessage(message, targetOrigin)
   }
 
   /**
@@ -139,52 +143,52 @@ abstract class BaseAPI implements IBaseAPI {
    * @param event
    * @param resources
    */
-  protected eventDispatcher(
+  public eventDispatcher(
     resolve: (value: any) => void,
     reject: (reason?: any) => void,
     event: string,
     resources: any
   ) {
     // 生成消息
-    const msg = this.generateMsg('CALL__' + event, resources)
-    this.waitQueue.set(msg.mid, { resolve, reject })
+    const msg = this.generateMessage('CALL__' + event, resources)
+    this.executorPool.set(msg.uuid, { resolve, reject })
     // 派发消息给子窗口
     this.postMessage(msg, '*')
     // 超时处理
     this.self.setTimeout(() => {
-      if (this.waitQueue.has(msg.mid)) {
-        this.waitQueue.delete(msg.mid)
-        reject(new Error(`event ${msg.type} timeout`))
+      if (this.executorPool.has(msg.uuid)) {
+        this.executorPool.delete(msg.uuid)
+        reject(new Error(`message type ${msg.type} timeout`))
       }
     }, 5000)
   }
 
   /**
-   * 注册一个事件
-   * @param event
-   * @param callback
+   * 注册一个监听函数
+   * @param type
+   * @param listener
    */
-  public on(event: string, callback: Callback) {
-    this.events.set('CALL__' + event, callback)
+  public on(type: string, listener: Listener) {
+    this.listeners.set('CALL__' + type, listener)
   }
 
   /**
-   * 移除一个事件
-   * @param event
+   * 移除一个监听函数
+   * @param type
    */
-  public off(event: string) {
-    this.events.delete('CALL__' + event)
+  public off(type: string) {
+    this.listeners.delete('CALL__' + type)
   }
 
   /**
-   * 派发一个事件
-   * @param event
+   * 派发一个监听函数
+   * @param type
    * @param resources
    * @returns
    */
-  public emit(event: string, resources: any): Promise<any> {
+  public emit(type: string, resources: any): Promise<any> {
     return new Promise<any>((resolve, reject) => {
-      this.eventDispatcher(resolve, reject, event, resources)
+      this.eventDispatcher(resolve, reject, type, resources)
     })
   }
 
@@ -194,121 +198,111 @@ abstract class BaseAPI implements IBaseAPI {
   public destroy() {
     this.self.removeEventListener('message', this.eventHandler)
   }
+
+  public static create() {}
 }
 
-export interface IParentAPI extends IBaseAPI {
-  child: Window
-  frame: HTMLIFrameElement
-  loadURL(url: string): void
-}
+export interface WindowReference extends PostMsgAPIOptions {}
 
-export interface ParentAPIOptions extends BaseAPIOptions {
-  container?: HTMLElement
-  className?: string
-  url?: string
-  frame?: HTMLIFrameElement
-}
+export class FrameWindowReference {
+  public static readonly Parent = class implements WindowReference {
+    public readonly listeners?: Map<string, Listener>
+    public readonly receiver: Window
+    public readonly channel: string = WebPostMsg.generateUUID()
 
-class ParentAPI extends BaseAPI implements IParentAPI {
-  /**
-   * 子窗口的句柄
-   */
-  public readonly child: Window
+    public readonly frame: HTMLIFrameElement
 
-  /**
-   * 子窗口ui句柄
-   */
-  public readonly frame: HTMLIFrameElement
+    public constructor(options: {
+      listeners?: Map<string, Listener>
+      container?: HTMLElement
+      className?: string
+      url?: string
+      frame?: HTMLIFrameElement
+    }) {
+      this.listeners = options.listeners
 
-  /**
-   * 父窗口指定给子窗口的唯一键值
-   */
-  public readonly wid: string = this.generateID()
-
-  public constructor(options: ParentAPIOptions) {
-    super(options)
-
-    // 如果传递了frame
-    if (options.frame) {
-      this.frame = options.frame
-      if (this.frame.name) {
-        this.wid = this.frame.name
+      // 如果传递了frame
+      if (options.frame) {
+        this.frame = options.frame
+        if (this.frame.name) {
+          this.channel = this.frame.name
+        } else {
+          this.frame.name = this.channel
+        }
       } else {
-        this.frame.name = this.wid
+        // 创建frame元素
+        this.frame = document.createElement('iframe')
+        this.frame.name = this.channel
+        if (options.className) this.frame.className = options.className
+        if (!options.container) throw new Error('container is undefined')
+        options.container.appendChild(this.frame)
       }
-    } else {
-      // 创建frame元素
-      this.frame = document.createElement('iframe')
-      this.frame.name = this.wid
-      if (options.className) this.frame.className = options.className
-      if (!options.container) throw new Error('container is null')
-      options.container.appendChild(this.frame)
+
+      this.receiver = this.frame.contentWindow!
+
+      if (options.url) this.loadURL(options.url)
     }
 
-    this.child = this.frame.contentWindow!
+    /**
+     * 加载一个URL
+     * @param url
+     */
+    public loadURL(url: string) {
+      this.frame.src = url
+    }
 
-    if (options.url) this.loadURL(options.url)
+    /**
+     * 销毁页面中的frame元素
+     */
+    public destroy() {
+      this.frame.parentNode!.removeChild(this.frame)
+    }
   }
 
-  public postMessage(message: MessageData, targetOrigin: string = '*'): void {
-    this.child.postMessage(message, targetOrigin)
-  }
+  public static readonly Child = class implements WindowReference {
+    public readonly listeners?: Map<string, Listener>
+    public readonly receiver: Window
+    public readonly channel: string
 
-  /**
-   * 加载一个URL
-   * @param url
-   */
-  public loadURL(url: string) {
-    this.frame.src = url
-  }
-
-  /**
-   * 重写父类方法，销毁页面中的frame元素
-   */
-  public override destroy() {
-    super.destroy()
-    this.frame.parentNode!.removeChild(this.frame)
-  }
-}
-
-export interface IChildAPI extends IBaseAPI {
-  parent: Window
-  ready(): void
-}
-
-export interface ChildAPIOptions extends BaseAPIOptions {}
-
-class ChildAPI extends BaseAPI implements IChildAPI {
-  /**
-   * 父窗口的句柄
-   */
-  public readonly parent: Window = window.parent
-
-  /**
-   * 父窗口指定给子窗口的唯一键值
-   */
-  public readonly wid: string = this.self.name
-
-  public constructor(options: ChildAPIOptions) {
-    super(options)
-    this.ready()
-  }
-
-  public postMessage(message: MessageData, targetOrigin: string = '*'): void {
-    this.parent.postMessage(message, targetOrigin)
-  }
-
-  /**
-   * 当子窗口初始化完毕，通知父页面。
-   */
-  public ready() {
-    this.postMessage(this.generateMsg('CALL__ready', null))
+    public constructor(options?: { listeners?: Map<string, Listener> }) {
+      options && (this.listeners = options.listeners)
+      this.receiver = window.parent
+      this.channel = window.name
+    }
   }
 }
 
-export { ParentAPI as Parent, ChildAPI as Child }
+export class OpenWindowReference {
+  public static readonly Parent = class implements WindowReference {
+    public readonly listeners?: Map<string, Listener>
+    public readonly receiver: Window
+    public readonly channel: string = WebPostMsg.generateUUID()
 
-export default {
-  Parent: ParentAPI,
-  Child: ChildAPI,
+    public constructor(options: {
+      listeners?: Map<string, Listener>
+      url: string
+      features?: string
+    }) {
+      this.listeners = options.listeners
+      this.receiver = window.open(options.url, this.channel, options.features)!
+    }
+
+    public destroy() {
+      this.receiver.close()
+    }
+  }
+
+  public static readonly Child = class implements WindowReference {
+    public readonly listeners?: Map<string, Listener>
+    public readonly receiver: Window
+    public readonly channel: string
+
+    public constructor(options?: { listeners?: Map<string, Listener> }) {
+      options && (this.listeners = options.listeners)
+      this.receiver = window.opener
+      this.channel = window.name
+    }
+  }
 }
+
+export { WebPostMsg as default }
