@@ -1,6 +1,6 @@
-/node_modules
+node_modules
 pnpm-lock.yaml
-/dist
-/lib
-/es
-/types
+dist
+lib
+es
+types

@@ -1,4 +1,4 @@
-import { generateUUID } from './utils'
+import { random } from '@kazura/web-util'
 
 export interface MessageData<T = any> {
   tag: typeof WebPostMsg.MESSAGE_TAG
@@ -21,7 +21,7 @@ export interface PostMsgAPIOptions {
   receiveAllChannel?: boolean
 }
 
-class WebPostMsg implements IPostMsgAPI {
+export default class WebPostMsg implements IPostMsgAPI {
   /**
    * 消息标签
    */
@@ -79,7 +79,7 @@ class WebPostMsg implements IPostMsgAPI {
    * @returns
    */
   public static generateUUID() {
-    return generateUUID()
+    return '' + random(10000, 99999) + new Date().getTime()
   }
 
   public addPrefixToMapKeys(map: Map<string, Listener>) {
@@ -223,5 +223,3 @@ class WebPostMsg implements IPostMsgAPI {
     this.self.removeEventListener('message', this.eventHandler)
   }
 }
-
-export default WebPostMsg

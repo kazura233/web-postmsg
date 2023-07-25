@@ -5,8 +5,7 @@
     <meta http-equiv="X-UA-Compatible" content="IE=edge" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Document</title>
-    <script src="../../dist/web-postmsg.js"></script>
-    <script src="../../dist/frame-window-reference.js"></script>
+    <script src="../../packages/postmsg-builder/dist/postmsg-builder.js"></script>
   </head>
   <style>
     html,
@@ -34,23 +33,16 @@
 </html>
 
 <script>
-  const frame = document.createElement('iframe')
-  frame.name = 'UUID-4224f8ffc8c4e69d48c735b6a461664bc436215c'
-  frame.className = 'container'
-  document.querySelector('.box').appendChild(frame)
+  webPostmsg = new PostmsgBuilder()
+    .createChildIFrameReceiver({
+      container: document.querySelector('.box'),
+      className: 'container',
+      url: './children.html',
+    })
+    .build()
 
-  listeners = new Map()
-  listeners.set('example', (data) => {
+  webPostmsg.on('example', (data) => {
     console.log(data)
     return 'OK'
   })
-
-  reference = new window.FrameWindowReference.Parent({
-    frame,
-    listeners,
-  })
-
-  webPostmsg = new window.WebPostmsg(reference)
-
-  reference.loadURL('./children.html')
 </script>

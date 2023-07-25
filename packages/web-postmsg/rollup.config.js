@@ -15,53 +15,12 @@ const noDeclarationFiles = { compilerOptions: { declaration: false } }
 
 const babelRuntimeVersion = pkg.dependencies['@babel/runtime'].replace(/^[^0-9]*/, '')
 
-const kebabToPascal = (kebabCase) =>
-  kebabCase.replace(/(^|-)(\w)/g, (_, __, char) => char.toUpperCase())
-
-const umdBundleNameToRollupOptions = (bundle, isDev = true) => {
-  const plugins = [
-    json(),
-    resolve({ extensions }),
-    typescript({ tsconfigOverride: noDeclarationFiles }),
-    babel({
-      extensions,
-      plugins: [['@babel/plugin-transform-runtime', { version: babelRuntimeVersion }]],
-      babelHelpers: 'runtime',
-      exclude: 'node_modules/**',
-    }),
-    commonjs(),
-    replace({
-      'process.env.NODE_ENV': JSON.stringify(isDev ? 'development' : 'production'),
-      preventAssignment: true,
-    }),
-  ]
-
-  !isDev && plugins.push(terser())
-
-  const options = {
-    input: `src/${bundle}.ts`,
-    output: {
-      file: `dist/${bundle}${isDev ? '' : '.min'}.js`,
-      format: 'umd',
-      name: kebabToPascal(bundle),
-      indent: false,
-      exports: 'default',
-      globals: {
-        WebPostMsg: 'WebPostMsg',
-      },
-    },
-    plugins,
-  }
-
-  return options
-}
-
 export default defineConfig([
   // CommonJS
   {
-    input: ['src/web-postmsg.ts', 'src/frame-window-reference.ts', 'src/open-window-reference.ts'],
+    input: 'src/index.ts',
     output: {
-      dir: 'lib',
+      file: pkg.main,
       format: 'cjs',
       indent: false,
       exports: 'default',
@@ -72,9 +31,7 @@ export default defineConfig([
       resolve({
         extensions,
       }),
-      typescript({
-        useTsconfigDeclarationDir: true,
-      }),
+      typescript({ useTsconfigDeclarationDir: true }),
       babel({
         extensions,
         plugins: [['@babel/plugin-transform-runtime', { version: babelRuntimeVersion }]],
@@ -87,7 +44,7 @@ export default defineConfig([
   {
     input: 'src/index.ts',
     output: {
-      file: 'es/web-postmsg.js',
+      file: pkg.module,
       format: 'es',
       indent: false,
     },
@@ -109,12 +66,58 @@ export default defineConfig([
     ],
   },
   // UMD Development
-  ...['web-postmsg', 'frame-window-reference', 'open-window-reference'].map((bundle) =>
-    umdBundleNameToRollupOptions(bundle)
-  ),
-
+  {
+    input: 'src/index.ts',
+    output: {
+      file: pkg.unpkg,
+      format: 'umd',
+      name: 'WebPostMsg',
+      indent: false,
+      exports: 'default',
+    },
+    plugins: [
+      json(),
+      resolve({ extensions }),
+      typescript({ tsconfigOverride: noDeclarationFiles }),
+      babel({
+        extensions,
+        plugins: [['@babel/plugin-transform-runtime', { version: babelRuntimeVersion }]],
+        babelHelpers: 'runtime',
+        exclude: 'node_modules/**',
+      }),
+      commonjs(),
+      replace({
+        'process.env.NODE_ENV': JSON.stringify('development'),
+        preventAssignment: true,
+      }),
+    ],
+  },
   // UMD Production
-  ...['web-postmsg', 'frame-window-reference', 'open-window-reference'].map((bundle) =>
-    umdBundleNameToRollupOptions(bundle, false)
-  ),
+  {
+    input: 'src/index.ts',
+    output: {
+      file: 'dist/web-broadcast.min.js',
+      format: 'umd',
+      name: 'WebPostMsg',
+      indent: false,
+      exports: 'default',
+    },
+    plugins: [
+      json(),
+      resolve({ extensions }),
+      typescript({ tsconfigOverride: noDeclarationFiles }),
+      babel({
+        extensions,
+        plugins: [['@babel/plugin-transform-runtime', { version: babelRuntimeVersion }]],
+        babelHelpers: 'runtime',
+        exclude: 'node_modules/**',
+      }),
+      commonjs(),
+      replace({
+        'process.env.NODE_ENV': JSON.stringify('production'),
+        preventAssignment: true,
+      }),
+      terser(),
+    ],
+  },
 ])

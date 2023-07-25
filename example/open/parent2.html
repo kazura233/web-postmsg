@@ -5,8 +5,7 @@
     <meta http-equiv="X-UA-Compatible" content="IE=edge" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Document</title>
-    <script src="../../dist/web-postmsg.js"></script>
-    <script src="../../dist/open-window-reference.js"></script>
+    <script src="../../packages/postmsg-builder/dist/postmsg-builder.js"></script>
   </head>
   <style>
     html,
@@ -34,17 +33,12 @@
 </html>
 
 <script>
-  listeners = new Map()
-  listeners.set('example', (data) => {
+  builder = new PostmsgBuilder().setListener('example', (data) => {
     console.log(data)
     return 'OK'
   })
 
-  reference = new window.OpenWindowReference.Parent({
-    listeners,
-  })
+  webPostmsg = builder.build()
 
-  webPostmsg = new window.WebPostmsg(reference)
-
-  reference.open('./children.html')
+  builder.open('./children.html')
 </script>
