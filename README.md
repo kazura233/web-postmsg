@@ -15,7 +15,7 @@
 ## Install
 
 ```sh
-yarn add @kazura/web-postmsg
+pnpm add @kazura/web-postmsg @kazura/postmsg-builder
 ```
 
 ## Usage
