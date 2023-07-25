@@ -5,6 +5,7 @@
     <meta http-equiv="X-UA-Compatible" content="IE=edge" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Document</title>
+    <script src="../../packages/web-postmsg/dist/web-postmsg.js"></script>
     <script src="../../packages/postmsg-builder/dist/postmsg-builder.js"></script>
   </head>
   <style>
@@ -28,9 +29,9 @@
 </html>
 
 <script>
-  webPostmsg = new window.PostmsgBuilder().createParentOpenerReceiver().build()
+  webPostMsg = new window.PostMsgBuilder().createParentOpenerReceiver().build()
 
   document.querySelector('.btn').addEventListener('click', () => {
-    webPostmsg.emit('example', 'Hello').then((res) => console.log(res))
+    webPostMsg.emit('example', 'Hello').then((res) => console.log(res))
   })
 </script>

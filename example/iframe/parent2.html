@@ -5,6 +5,7 @@
     <meta http-equiv="X-UA-Compatible" content="IE=edge" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Document</title>
+    <script src="../../packages/web-postmsg/dist/web-postmsg.js"></script>
     <script src="../../packages/postmsg-builder/dist/postmsg-builder.js"></script>
   </head>
   <style>
@@ -38,14 +39,14 @@
   iframe.className = 'container'
   document.querySelector('.box').appendChild(iframe)
 
-  builder = new PostmsgBuilder()
+  builder = new PostMsgBuilder()
     .createChildIFrameReceiver(iframe)
     .setListener('example', (data) => {
       console.log(data)
       return 'OK'
     })
 
-  webPostmsg = builder.build()
+  webPostMsg = builder.build()
 
   builder.loadURL('./children.html')
 </script>

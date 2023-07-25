@@ -71,13 +71,14 @@ export default defineConfig([
     output: {
       file: pkg.unpkg,
       format: 'umd',
-      name: 'PostmsgBuilder',
+      name: 'PostMsgBuilder',
       indent: false,
       exports: 'default',
       globals: {
-        WebPostMsg: 'WebPostMsg',
+        '@kazura/web-postmsg': 'WebPostMsg',
       },
     },
+    external: [...Object.keys(pkg.peerDependencies)],
     plugins: [
       json(),
       resolve({ extensions }),
@@ -99,15 +100,16 @@ export default defineConfig([
   {
     input: 'src/index.ts',
     output: {
-      file: 'dist/web-broadcast.min.js',
+      file: 'dist/postmsg-builder.min.js',
       format: 'umd',
-      name: 'PostmsgBuilder',
+      name: 'PostMsgBuilder',
       indent: false,
       exports: 'default',
       globals: {
-        WebPostMsg: 'WebPostMsg',
+        '@kazura/web-postmsg': 'WebPostMsg',
       },
     },
+    external: [...Object.keys(pkg.peerDependencies)],
     plugins: [
       json(),
       resolve({ extensions }),

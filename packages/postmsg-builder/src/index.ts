@@ -11,7 +11,7 @@ export interface ParentOpenerReceiverOptions {
   features?: string
 }
 
-export default class PostmsgBuilder {
+export default class PostMsgBuilder {
   public iframe?: HTMLIFrameElement
 
   public options: Required<PostMsgAPIOptions> = {
@@ -72,11 +72,11 @@ export default class PostmsgBuilder {
     return new WebPostMsg(this.options)
   }
 
-  public createChildIFrameReceiver(iframe: HTMLIFrameElement): PostmsgBuilder
-  public createChildIFrameReceiver(options: ParentIFrameReceiverOptions): PostmsgBuilder
+  public createChildIFrameReceiver(iframe: HTMLIFrameElement): PostMsgBuilder
+  public createChildIFrameReceiver(options: ParentIFrameReceiverOptions): PostMsgBuilder
   public createChildIFrameReceiver(
     $1: HTMLIFrameElement | ParentIFrameReceiverOptions
-  ): PostmsgBuilder {
+  ): PostMsgBuilder {
     if ($1 instanceof HTMLIFrameElement) {
       const iframe = $1
 
@@ -118,9 +118,9 @@ export default class PostmsgBuilder {
     return this
   }
 
-  public createChildOpenerReceiver(receiver: Window): PostmsgBuilder
-  public createChildOpenerReceiver(options: ParentOpenerReceiverOptions): PostmsgBuilder
-  public createChildOpenerReceiver($1: Window | ParentOpenerReceiverOptions): PostmsgBuilder {
+  public createChildOpenerReceiver(receiver: Window): PostMsgBuilder
+  public createChildOpenerReceiver(options: ParentOpenerReceiverOptions): PostMsgBuilder
+  public createChildOpenerReceiver($1: Window | ParentOpenerReceiverOptions): PostMsgBuilder {
     if ($1 instanceof Window) {
       this.setReceiver($1)
       return this
