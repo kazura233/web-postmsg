@@ -15,7 +15,7 @@
 ## Install
 
 ```sh
-pnpm add @kazura/web-postmsg @kazura/postmsg-builder
+pnpm i @kazura/web-postmsg @kazura/postmsg-builder
 ```
 
 ## Usage
