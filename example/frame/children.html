@@ -5,7 +5,8 @@
     <meta http-equiv="X-UA-Compatible" content="IE=edge" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Document</title>
-    <script src="../dist/web-postmsg.min.js"></script>
+    <script src="../../dist/web-postmsg.js"></script>
+    <script src="../../dist/frame-window-reference.js"></script>
   </head>
   <style>
     html,
@@ -28,7 +29,8 @@
 </html>
 
 <script>
-  webPostmsg = new window.WebPostmsg.Child()
+  reference = new window.FrameWindowReference.Child()
+  webPostmsg = new window.WebPostmsg(reference)
 
   document.querySelector('.btn').addEventListener('click', () => {
     webPostmsg.emit('example', 'Hello').then((res) => console.log(res))

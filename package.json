@@ -24,7 +24,7 @@
   ],
   "scripts": {
     "clean": "rimraf dist lib es types",
-    "build": "rollup --config rollup.config.ts --configPlugin @rollup/plugin-typescript"
+    "build": "pnpm clean & rollup --config rollup.config.js"
   },
   "peerDependencies": {
     "@kazura/web-util": "^0.0.1-alpha.5"
@@ -42,7 +42,6 @@
     "@rollup/plugin-json": "^6.0.0",
     "@rollup/plugin-node-resolve": "^15.0.1",
     "@rollup/plugin-replace": "^5.0.2",
-    "@rollup/plugin-typescript": "^10.0.1",
     "rimraf": "^3.0.2",
     "rollup": "^3.8.1",
     "@rollup/plugin-terser": "^0.2.1",

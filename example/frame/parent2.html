@@ -5,7 +5,8 @@
     <meta http-equiv="X-UA-Compatible" content="IE=edge" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Document</title>
-    <script src="../dist/web-postmsg.min.js"></script>
+    <script src="../../dist/web-postmsg.js"></script>
+    <script src="../../dist/frame-window-reference.js"></script>
   </head>
   <style>
     html,
@@ -38,18 +39,18 @@
   frame.className = 'container'
   document.querySelector('.box').appendChild(frame)
 
-  const webPostmsg = new window.WebPostmsg.Parent({
-    frame,
-    events: [
-      [
-        'example',
-        (data) => {
-          console.log(data)
-          return 'OK'
-        },
-      ],
-    ],
+  listeners = new Map()
+  listeners.set('example', (data) => {
+    console.log(data)
+    return 'OK'
   })
 
-  webPostmsg.loadURL('./children.html')
+  reference = new window.FrameWindowReference.Parent({
+    frame,
+    listeners,
+  })
+
+  webPostmsg = new window.WebPostmsg(reference)
+
+  reference.loadURL('./children.html')
 </script>
