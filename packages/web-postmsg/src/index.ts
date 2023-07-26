@@ -70,7 +70,11 @@ export default class WebPostMsg implements IPostMsgAPI {
 
     if (options.receiveAllChannel) this.receiveAllChannel = options.receiveAllChannel
 
-    if (options.listeners) this.listeners = this.addPrefixToMapKeys(options.listeners)
+    if (options.listeners) {
+      for (const [type, listener] of options.listeners) {
+        this.on(type, listener)
+      }
+    }
     this.self.addEventListener('message', this.eventHandler)
   }
 
@@ -80,15 +84,6 @@ export default class WebPostMsg implements IPostMsgAPI {
    */
   public static generateUUID() {
     return '' + random(10000, 99999) + new Date().getTime()
-  }
-
-  public addPrefixToMapKeys(map: Map<string, Listener>) {
-    const newMap = new Map<string, Listener>()
-    for (const [key, value] of map) {
-      const newKey = 'CALL__' + key
-      newMap.set(newKey, value)
-    }
-    return newMap
   }
 
   /**
