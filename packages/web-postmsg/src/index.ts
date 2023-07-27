@@ -86,6 +86,10 @@ export default class WebPostMsg implements IPostMsgAPI {
     return '' + random(10000, 99999) + new Date().getTime()
   }
 
+  public generateUUID() {
+    return WebPostMsg.generateUUID()
+  }
+
   /**
    * 生成一条消息
    * @param type
