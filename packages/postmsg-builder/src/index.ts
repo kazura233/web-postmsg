@@ -178,15 +178,17 @@ export default class PostMsgBuilder {
   public createChildOpenerReceiver(receiver: Window): PostMsgBuilder
   public createChildOpenerReceiver(options: ParentOpenerReceiverOptions): PostMsgBuilder
   public createChildOpenerReceiver($1: Window | ParentOpenerReceiverOptions): PostMsgBuilder {
-    if ($1 instanceof Window) {
-      this.setReceiver($1)
-      return this
-    }
+    if (typeof $1 === 'object') {
+      if ('opener' in $1) {
+        this.setReceiver($1)
+        return this
+      }
 
-    if ($1.url) {
-      const options = $1
-      this.open(options.url, options.features)
-      return this
+      if ($1.url) {
+        const options = $1
+        this.open(options.url, options.features)
+        return this
+      }
     }
 
     throw new Error('createChildOpenerReceiver: invalid arguments')
