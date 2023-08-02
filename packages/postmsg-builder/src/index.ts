@@ -32,8 +32,6 @@ export default class PostMsgBuilder {
    */
   private setChannel(channel: string) {
     this.options.channel = channel
-
-    return this
   }
 
   /**
@@ -127,7 +125,7 @@ export default class PostMsgBuilder {
       if (iframe.name) {
         this.setChannel(iframe.name)
       } else {
-        iframe.name = this.options.channel
+        throw new Error('createChildIFrameReceiver: iframe.name is empty')
       }
 
       this.setIFrameReceiver(iframe)
@@ -175,13 +173,21 @@ export default class PostMsgBuilder {
    * 创建 Child opener 接收者
    * @param receiver
    */
-  public createChildOpenerReceiver(receiver: Window): PostMsgBuilder
+  public createChildOpenerReceiver(receiver: Window, name: string): PostMsgBuilder
   public createChildOpenerReceiver(options: ParentOpenerReceiverOptions): PostMsgBuilder
-  public createChildOpenerReceiver($1: Window | ParentOpenerReceiverOptions): PostMsgBuilder {
+  public createChildOpenerReceiver(
+    $1: Window | ParentOpenerReceiverOptions,
+    $2?: string
+  ): PostMsgBuilder {
     if (typeof $1 === 'object') {
       if ('opener' in $1) {
         this.setReceiver($1)
-        return this
+        if ($2) {
+          this.setChannel($2)
+          return this
+        }
+
+        throw new Error('createChildOpenerReceiver: name is empty')
       }
 
       if ($1.url) {
