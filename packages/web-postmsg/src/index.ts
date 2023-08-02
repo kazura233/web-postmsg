@@ -27,6 +27,10 @@ export default class WebPostMsg implements IPostMsgAPI {
    */
   public static readonly MESSAGE_TAG = 'application/x-web-postmsg-v2'
 
+  public static readonly PREFIX_DEFAULT = 'CALL__'
+  public static readonly PREFIX_INTERNAL = 'INTERNAL__'
+  public static readonly REPLY_TYPE = WebPostMsg.PREFIX_INTERNAL + 'REPLY__MSG'
+
   /**
    * 频道
    */
@@ -119,7 +123,7 @@ export default class WebPostMsg implements IPostMsgAPI {
         /**
          * 收到一条事件回应，根据uuid将回应数据交给对应的事件发起者。
          */
-        if (data.type === 'SYS__REPLY__MSG') {
+        if (data.type === WebPostMsg.REPLY_TYPE) {
           const p = this.executorPool.get(data.uuid)
           this.executorPool.delete(data.uuid)
           if (p) p.resolve(data.resources)
@@ -146,7 +150,7 @@ export default class WebPostMsg implements IPostMsgAPI {
    * @param replyMessageId
    */
   public replyMessage(resources: any, replyMessageId: string) {
-    const message = this.generateMessage('SYS__REPLY__MSG', resources, replyMessageId)
+    const message = this.generateMessage(WebPostMsg.REPLY_TYPE, resources, replyMessageId)
     this.postMessage(message)
   }
 
@@ -173,7 +177,7 @@ export default class WebPostMsg implements IPostMsgAPI {
     resources: any
   ) {
     // 生成消息
-    const msg = this.generateMessage('CALL__' + event, resources)
+    const msg = this.generateMessage(WebPostMsg.PREFIX_DEFAULT + event, resources)
     this.executorPool.set(msg.uuid, { resolve, reject })
     // 派发消息给子窗口
     this.postMessage(msg, '*')
@@ -181,7 +185,7 @@ export default class WebPostMsg implements IPostMsgAPI {
     this.self.setTimeout(() => {
       if (this.executorPool.has(msg.uuid)) {
         this.executorPool.delete(msg.uuid)
-        reject(new Error(`message type ${msg.type} timeout`))
+        reject(new Error(`eventDispatcher: message type ${msg.type} timeout`))
       }
     }, 5000)
   }
@@ -192,7 +196,7 @@ export default class WebPostMsg implements IPostMsgAPI {
    * @param listener
    */
   public on(type: string, listener: Listener) {
-    this.listeners.set('CALL__' + type, listener)
+    this.listeners.set(WebPostMsg.PREFIX_DEFAULT + type, listener)
   }
 
   /**
@@ -200,7 +204,7 @@ export default class WebPostMsg implements IPostMsgAPI {
    * @param type
    */
   public off(type: string) {
-    this.listeners.delete('CALL__' + type)
+    this.listeners.delete(WebPostMsg.PREFIX_DEFAULT + type)
   }
 
   /**
