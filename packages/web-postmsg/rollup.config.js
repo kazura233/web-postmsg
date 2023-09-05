@@ -96,11 +96,12 @@ export default defineConfig([
   {
     input: 'src/index.ts',
     output: {
-      file: 'dist/web-broadcast.min.js',
+      file: 'dist/index.min.js',
       format: 'umd',
       name: 'WebPostMsg',
       indent: false,
       exports: 'default',
+      sourcemap: true,
     },
     plugins: [
       json(),

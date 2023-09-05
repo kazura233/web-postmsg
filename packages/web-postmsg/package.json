@@ -1,6 +1,6 @@
 {
   "name": "@kazura/web-postmsg",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "web-postmsg",
   "keywords": [
     "postmsg"
@@ -11,9 +11,9 @@
   "author": "kazura233 <kazira233@gmail.com>",
   "license": "MIT",
   "type": "module",
-  "main": "lib/web-postmsg.js",
-  "unpkg": "dist/web-postmsg.js",
-  "module": "es/web-postmsg.js",
+  "main": "lib/index.js",
+  "unpkg": "dist/index.js",
+  "module": "es/index.js",
   "types": "types/index.d.ts",
   "files": [
     "dist",
@@ -27,37 +27,29 @@
     "build": "pnpm clean & rollup --config rollup.config.js"
   },
   "peerDependencies": {
-    "@kazura/web-util": "^0.0.1-alpha.5"
+    "@kazura/web-util": "^0.1.0"
   },
   "dependencies": {
-    "@babel/runtime": "^7.20.7",
-    "@kazura/web-util": "^0.0.1-alpha.5"
+    "@babel/runtime": "^7.22.11",
+    "@kazura/web-util": "^0.1.0"
   },
   "devDependencies": {
-    "@babel/core": "^7.20.7",
-    "@babel/plugin-transform-runtime": "^7.19.6",
-    "@babel/preset-env": "^7.20.2",
+    "@babel/core": "^7.22.11",
+    "@babel/plugin-transform-runtime": "^7.22.10",
+    "@babel/preset-env": "^7.22.14",
     "@rollup/plugin-babel": "^6.0.3",
-    "@rollup/plugin-commonjs": "^24.0.0",
+    "@rollup/plugin-commonjs": "^25.0.4",
     "@rollup/plugin-json": "^6.0.0",
-    "@rollup/plugin-node-resolve": "^15.0.1",
+    "@rollup/plugin-node-resolve": "^15.2.1",
     "@rollup/plugin-replace": "^5.0.2",
-    "rimraf": "^3.0.2",
-    "rollup": "^3.8.1",
-    "@rollup/plugin-terser": "^0.2.1",
-    "rollup-plugin-typescript2": "^0.34.1",
-    "tslib": "^2.4.1",
-    "typescript": "^4.9.4"
+    "@rollup/plugin-terser": "^0.4.3",
+    "rimraf": "^5.0.1",
+    "rollup": "^3.28.1",
+    "rollup-plugin-typescript2": "^0.35.0",
+    "tslib": "^2.6.2",
+    "typescript": "^5.2.2"
   },
   "npmName": "@kazura233/web-postmsg",
-  "npmFileMap": [
-    {
-      "basePath": "/dist/",
-      "files": [
-        "*.js"
-      ]
-    }
-  ],
   "publishConfig": {
     "access": "public",
     "registry": "https://registry.npmjs.org/"
